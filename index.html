@@ -169,12 +169,16 @@ function tsToStr(tsMs) {
   return `${MM}-${DD} ${hh}:${mm}`;
 }
 
+// Rubik 接口浏览器有 CORS 限制，走 corsproxy.io 中转
+const CORS_PROXY = "https://corsproxy.io/?url=";
 async function okxGet(path, params = {}) {
-  const url = new URL(BASE + path);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const u = new URL(BASE + path);
+  Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+  const needsProxy = path.startsWith("/api/v5/rubik/");
+  const fetchUrl = needsProxy ? CORS_PROXY + encodeURIComponent(u.toString()) : u.toString();
   for (let i = 0; i < 2; i++) {
     try {
-      const r = await fetch(url.toString());
+      const r = await fetch(fetchUrl);
       const j = await r.json();
       if (j.code === "0") return j.data || [];
       console.warn("OKX", path, j.msg || j.code);
