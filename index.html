@@ -1,462 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="OKX 快照" />
-<meta name="theme-color" content="#1e1e2e" />
-<title>OKX 合约快照</title>
-<style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    margin: 0; padding: 0;
-    background: #1e1e2e; color: #eee;
-    font-family: -apple-system, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
-    font-size: 16px;
-    min-height: 100vh;
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .wrap { max-width: 600px; margin: 0 auto; padding: 16px; }
-  h1 { font-size: 18px; margin: 8px 0 16px; color: #f5c542; text-align: center; }
-
-  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .label { font-size: 14px; color: #aaa; min-width: 70px; }
-  .hint { font-size: 12px; color: #777; margin-left: auto; }
-
-  input, select {
-    flex: 1; padding: 10px 12px;
-    border: 1px solid #555; border-radius: 8px;
-    background: #2a2a3e; color: #eee;
-    font-size: 16px; outline: none;
-    -webkit-appearance: none; appearance: none;
-  }
-  input[type="text"] { text-transform: uppercase; }
-  input:focus, select:focus { border-color: #f5c542; }
-  input[type="number"] { max-width: 90px; -moz-appearance: textfield; }
-  input[type=number]::-webkit-outer-spin-button,
-  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-  select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23aaa' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 32px;
-  }
-
-  button {
-    padding: 12px 20px;
-    border: none; border-radius: 8px;
-    font-size: 16px; font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-  button:active { opacity: 0.7; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .btn-primary { background: #f5c542; color: #1e1e2e; min-width: 80px; }
-  .btn-fill { background: #4ade80; color: #1e1e2e; flex: 1; }
-  .btn-copy { background: transparent; color: #ccc; border: 1px solid #555; }
-
-  .status {
-    font-size: 13px; color: #999;
-    min-height: 22px;
-    margin: 12px 0 8px;
-    text-align: center;
-  }
-  .status.loading { color: #f5c542; }
-  .status.ok { color: #4ade80; }
-  .status.error { color: #f87171; }
-
-  .actions { display: flex; gap: 10px; }
-  .hidden { display: none !important; }
-
-  pre {
-    background: #15151f;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 12px;
-    color: #ddd;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    white-space: pre;
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: 50vh;
-    margin: 12px 0;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .footer {
-    text-align: center;
-    color: #555;
-    font-size: 11px;
-    margin-top: 24px;
-    padding-bottom: 16px;
-  }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1419">
+<title>ETH 交易快照</title>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-<div class="wrap">
-  <h1>⚡ OKX 合约快照</h1>
-
-  <div class="row">
-    <input id="symbol" type="text" placeholder="币种 如 BTC" autocomplete="off" autocapitalize="characters" />
-    <button class="btn-primary" id="fetchBtn">获取</button>
+<header>
+  <h1>ETH 交易快照</h1>
+  <div class="bar">
+    <input id="symbol" value="ETH" maxlength="10" autocapitalize="characters" autocorrect="off" spellcheck="false" inputmode="text" />
+    <button id="btn-fetch" class="primary">抓取</button>
   </div>
+  <div id="status">就绪 — 点"抓取"获取数据</div>
+</header>
 
-  <div class="row">
-    <span class="label">K线周期</span>
-    <select id="klineBar">
-      <option value="1m">1分钟</option>
-      <option value="5m">5分钟</option>
-      <option value="15m" selected>15分钟</option>
-      <option value="30m">30分钟</option>
-      <option value="1H">1小时</option>
-      <option value="2H">2小时</option>
-      <option value="4H">4小时</option>
-      <option value="6H">6小时</option>
-      <option value="12H">12小时</option>
-      <option value="1D">1天</option>
-      <option value="1W">1周</option>
-    </select>
+<details class="card" id="acc-card">
+  <summary>账户参数 / CORS 代理(本机保存)</summary>
+  <div class="grid">
+    <label>净值 USDT
+      <input id="equity" type="number" inputmode="decimal" step="0.01" placeholder="5000">
+    </label>
+    <label>单笔风险 %
+      <input id="risk" type="number" inputmode="decimal" step="0.1" placeholder="1">
+    </label>
+    <label>持仓时长
+      <select id="horizon">
+        <option value="">—</option>
+        <option value="intraday (&lt;8h)">日内 &lt;8h</option>
+        <option value="swing (1-5 days)">摆动 1-5d</option>
+        <option value="trend (&gt;1 week)">趋势 &gt;1 周</option>
+      </select>
+    </label>
+    <label>爆仓容忍 %
+      <input id="liqtol" type="number" inputmode="decimal" step="0.1" placeholder="8">
+    </label>
+    <label class="wide">已有头寸
+      <textarea id="positions" rows="2" placeholder="例如 BTC 长 0.05 张"></textarea>
+    </label>
+    <label class="wide">CORS 代理 URL(Yahoo / Farside 需要,留空则两段失败)
+      <input id="proxy" type="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://your-worker.workers.dev/?url=">
+    </label>
+    <div class="hint wide">
+      提示:OKX 与 CoinGecko 直连即可;<b>宏观 DXY/NDX/US10Y</b> 与 <b>ETH ETF 流向</b> 必须经代理(浏览器 CORS 限制)。推荐部署自己的 Cloudflare Worker — 见 README。
+    </div>
   </div>
+</details>
 
-  <div class="row">
-    <span class="label">统计周期</span>
-    <select id="statPeriod">
-      <option value="5m" selected>5分钟</option>
-      <option value="1H">1小时</option>
-      <option value="8H">8小时</option>
-      <option value="1D">1天</option>
-    </select>
-    <span class="hint">持仓/多空/Taker</span>
-  </div>
-
-  <div class="row">
-    <span class="label">条数</span>
-    <input id="count" type="number" min="1" max="300" value="20" />
-    <span class="label" style="min-width:auto">资金费率</span>
-    <input id="fundingCount" type="number" min="1" max="100" value="8" />
-  </div>
-
-  <div class="status" id="status"></div>
-
-  <div class="actions hidden" id="actions">
-    <button class="btn-fill" id="copyBtn">📋 复制全部</button>
-  </div>
-
-  <pre id="output" class="hidden"></pre>
-
-  <div class="footer">数据由 OKX 公开 API 提供 · 仅供参考</div>
+<div class="actions" id="actions" hidden>
+  <button id="btn-copy" class="primary">📋 复制 Markdown</button>
+  <button id="btn-json">下载 JSON</button>
 </div>
 
-<script>
-/* ============== 工具函数 ============== */
-const BASE = "https://www.okx.com";
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const pause = () => sleep(450);
+<main id="output" class="preview" aria-live="polite"></main>
 
-function tsToStr(tsMs) {
-  const dt = new Date(Number(tsMs) + 8 * 3600000);
-  const MM = String(dt.getUTCMonth() + 1).padStart(2, "0");
-  const DD = String(dt.getUTCDate()).padStart(2, "0");
-  const hh = String(dt.getUTCHours()).padStart(2, "0");
-  const mm = String(dt.getUTCMinutes()).padStart(2, "0");
-  return `${MM}-${DD} ${hh}:${mm}`;
-}
+<footer>
+  <small>纯前端 · 数据存于浏览器 · 不上传任何参数</small>
+</footer>
 
-// Rubik 接口浏览器有 CORS 限制，走 corsproxy.io 中转
-const CORS_PROXY = "https://corsproxy.io/?url=";
-async function okxGet(path, params = {}) {
-  const u = new URL(BASE + path);
-  Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
-  const needsProxy = path.startsWith("/api/v5/rubik/");
-  const fetchUrl = needsProxy ? CORS_PROXY + encodeURIComponent(u.toString()) : u.toString();
-  for (let i = 0; i < 2; i++) {
-    try {
-      const r = await fetch(fetchUrl);
-      const j = await r.json();
-      if (j.code === "0") return j.data || [];
-      console.warn("OKX", path, j.msg || j.code);
-      return [];
-    } catch (e) {
-      if (i === 0) await sleep(1000);
-      else { console.error(path, e); return []; }
-    }
-  }
-  return [];
-}
-
-const pad = (s, n) => String(s).padStart(n, " ");
-const fmtInt = (v) => v.toLocaleString("en-US", { maximumFractionDigits: 0 });
-const fmtNum = (v, d = 6) => v.toFixed(d);
-
-/* ============== Fetcher ============== */
-async function fetchTicker(instId) {
-  const d = await okxGet("/api/v5/market/ticker", { instId });
-  if (!d.length) return null;
-  const t = d[0];
-  const last = +t.last, open = +t.open24h;
-  return {
-    last, open24h: open, high24h: +t.high24h, low24h: +t.low24h,
-    vol24h: +t.volCcy24h,
-    chg_pct: +((last - open) / open * 100).toFixed(2),
-  };
-}
-
-function calcMa(c, n) { if (c.length < n) return null; return +(c.slice(-n).reduce((a, b) => a + b, 0) / n).toFixed(8); }
-function calcBoll(c, n = 20, k = 2) {
-  if (c.length < n) return [null, null, null];
-  const w = c.slice(-n), ma = w.reduce((a, b) => a + b, 0) / n;
-  const std = Math.sqrt(w.reduce((a, x) => a + (x - ma) ** 2, 0) / n);
-  return [+(ma).toFixed(8), +(ma + k * std).toFixed(8), +(ma - k * std).toFixed(8)];
-}
-
-async function fetchKlines(instId, bar, showN) {
-  const fetchN = Math.min(300, Math.max(showN, 20));
-  const d = await okxGet("/api/v5/market/candles", { instId, bar, limit: String(fetchN) });
-  if (!d.length) return [[], {}];
-  d.reverse();
-  const candles = [], closes = [];
-  for (const c of d) {
-    candles.push({ time: tsToStr(c[0]), open: +c[1], high: +c[2], low: +c[3], close: +c[4], vol_usdt: +c[7] });
-    closes.push(+c[4]);
-  }
-  const ind = { ma5: calcMa(closes, 5), ma10: calcMa(closes, 10), ma20: calcMa(closes, 20) };
-  const [mid, up, lo] = calcBoll(closes, 20);
-  ind.boll_mid = mid; ind.boll_upper = up; ind.boll_lower = lo;
-  return [candles, ind];
-}
-
-async function fetchOiHistory(instId, period, n) {
-  const d = await okxGet("/api/v5/rubik/stat/contracts/open-interest-history", { instId, period });
-  await pause();
-  if (!d.length) return [];
-  d.reverse();
-  return d.slice(-n).map((x) => ({ time: tsToStr(x[0]), oi: +x[1] }));
-}
-
-async function fetchLsRatio(ccy, period, n) {
-  const d = await okxGet("/api/v5/rubik/stat/contracts/long-short-account-ratio", { ccy, period });
-  await pause();
-  if (!d.length) return [];
-  d.reverse();
-  return d.slice(-n).map((x) => ({ time: tsToStr(x[0]), ratio: +x[1] }));
-}
-
-async function fetchFunding(instId) {
-  const d = await okxGet("/api/v5/public/funding-rate", { instId });
-  if (!d.length) return null;
-  return { current: +d[0].fundingRate, next_time: tsToStr(d[0].nextFundingTime) };
-}
-
-async function fetchFundingHist(instId, limit) {
-  const d = await okxGet("/api/v5/public/funding-rate-history", { instId, limit: String(limit) });
-  if (!d.length) return [];
-  d.reverse();
-  return d.map((x) => ({ time: tsToStr(x.fundingTime), rate: +x.fundingRate }));
-}
-
-async function fetchTaker(ccy, period, n) {
-  const d = await okxGet("/api/v5/rubik/stat/taker-volume", { ccy, period, instType: "CONTRACTS" });
-  await pause();
-  if (!d.length) return [];
-  d.reverse();
-  return d.slice(-n).map((x) => {
-    const buy = +x[1], sell = +x[2];
-    return { time: tsToStr(x[0]), buy: +buy.toFixed(2), sell: +sell.toFixed(2), ratio: sell > 0 ? +(buy / sell).toFixed(3) : 999 };
-  });
-}
-
-/* ============== Format ============== */
-function formatOutput(symbol, ticker, candles, ind, oiHist, lsRatio, funding, fundHist, taker, showN, klineBar, statPeriod) {
-  const now = new Date(Date.now() + 8 * 3600000).toISOString().replace("T", " ").slice(0, 19);
-  const L = [];
-  L.push(`=== ${symbol}-USDT-SWAP 快照 @ ${now} ===\n`);
-
-  if (ticker) {
-    L.push("【行情】");
-    L.push(`  最新价: ${ticker.last}  24h变化: ${ticker.chg_pct > 0 ? "+" : ""}${ticker.chg_pct}%`);
-    L.push(`  24h高: ${ticker.high24h}  24h低: ${ticker.low24h}`);
-    L.push(`  24h成交额: ${fmtInt(ticker.vol24h)} USDT`);
-  }
-  L.push("");
-
-  if (candles.length) {
-    L.push(`【K线-${klineBar} 最近${showN}根】`);
-    L.push(`  ${pad("时间",11)}   ${pad("开",10)}  ${pad("高",10)}  ${pad("低",10)}  ${pad("收",10)}  ${pad("成交额USDT",12)}`);
-    for (const c of candles.slice(-showN)) {
-      L.push(`  ${pad(c.time,11)}  ${pad(fmtNum(c.open),10)} ${pad(fmtNum(c.high),10)} ${pad(fmtNum(c.low),10)} ${pad(fmtNum(c.close),10)}  ${pad(Math.round(c.vol_usdt).toLocaleString(),12)}`);
-    }
-  }
-  L.push("");
-
-  if (ind && ind.ma5 != null) {
-    L.push("【技术指标(当前)】");
-    L.push(`  MA5=${ind.ma5}  MA10=${ind.ma10}  MA20=${ind.ma20}`);
-    if (ind.boll_mid != null) {
-      L.push(`  BOLL: 上轨=${ind.boll_upper}  中轨=${ind.boll_mid}  下轨=${ind.boll_lower}`);
-    }
-  }
-  L.push("");
-
-  if (oiHist.length) {
-    L.push(`【持仓量变化-${statPeriod}】`);
-    for (const o of oiHist) L.push(`  ${o.time}  持仓: ${fmtInt(o.oi)}`);
-  }
-  L.push("");
-
-  if (lsRatio.length) {
-    L.push(`【多空持仓人数比-${statPeriod}】`);
-    for (const r of lsRatio) {
-      const pl = r.ratio / (1 + r.ratio) * 100;
-      L.push(`  ${r.time}  比值: ${r.ratio.toFixed(3)}  多:${pl.toFixed(1)}% 空:${(100 - pl).toFixed(1)}%`);
-    }
-  }
-  L.push("");
-
-  if (funding) {
-    L.push("【资金费率】");
-    L.push(`  当前费率: ${(funding.current * 100).toFixed(4)}%  下次结算: ${funding.next_time}`);
-    if (fundHist.length) {
-      L.push(`  近期历史: ${fundHist.map((h) => (h.rate * 100).toFixed(4) + "%").join(" → ")}`);
-    }
-  }
-  L.push("");
-
-  if (taker.length) {
-    L.push(`【Taker买卖量-${statPeriod}(主动成交)】`);
-    L.push(`  ${pad("时间",11)}  ${pad("买入",10)}  ${pad("卖出",10)}  ${pad("买卖比",6)}`);
-    for (const t of taker) {
-      L.push(`  ${pad(t.time,11)}  ${pad(t.buy.toFixed(2),10)}  ${pad(t.sell.toFixed(2),10)}  ${pad(t.ratio.toFixed(3),6)}`);
-    }
-  }
-  L.push("");
-  return L.join("\n");
-}
-
-/* ============== UI ============== */
-const $ = (id) => document.getElementById(id);
-const symbolEl = $("symbol"), klineBarEl = $("klineBar"), statPeriodEl = $("statPeriod");
-const countEl = $("count"), fundingCountEl = $("fundingCount");
-const fetchBtn = $("fetchBtn"), copyBtn = $("copyBtn");
-const statusEl = $("status"), outputEl = $("output"), actionsEl = $("actions");
-
-let cachedData = "";
-
-/* 持久化 */
-const SAVE_KEY = "okx_snap_prefs_v1";
-function saveOpts() {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
-      symbol: symbolEl.value,
-      klineBar: klineBarEl.value,
-      statPeriod: statPeriodEl.value,
-      count: countEl.value,
-      fundingCount: fundingCountEl.value,
-    }));
-  } catch (e) {}
-}
-function loadOpts() {
-  try {
-    const p = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
-    if (p.symbol) symbolEl.value = p.symbol;
-    if (p.klineBar) klineBarEl.value = p.klineBar;
-    if (p.statPeriod) statPeriodEl.value = p.statPeriod;
-    if (p.count) countEl.value = p.count;
-    if (p.fundingCount) fundingCountEl.value = p.fundingCount;
-  } catch (e) {}
-}
-loadOpts();
-[symbolEl, klineBarEl, statPeriodEl, countEl, fundingCountEl].forEach((el) => {
-  el.addEventListener("change", saveOpts);
-});
-
-function setStatus(text, cls = "") {
-  statusEl.textContent = text;
-  statusEl.className = "status " + cls;
-}
-
-async function doFetch() {
-  const symbol = symbolEl.value.trim().toUpperCase();
-  if (!symbol) { symbolEl.focus(); return; }
-  symbolEl.value = symbol;
-  saveOpts();
-
-  const klineBar = klineBarEl.value;
-  const statPeriod = statPeriodEl.value;
-  const n = Math.max(1, Math.min(300, parseInt(countEl.value) || 20));
-  const fundN = Math.max(1, Math.min(100, parseInt(fundingCountEl.value) || 8));
-  const instId = `${symbol}-USDT-SWAP`;
-
-  fetchBtn.disabled = true;
-  fetchBtn.textContent = "...";
-  actionsEl.classList.add("hidden");
-  outputEl.classList.add("hidden");
-  cachedData = "";
-
-  try {
-    setStatus("获取行情...", "loading");
-    const ticker = await fetchTicker(instId);
-    if (!ticker) {
-      setStatus(`❌ 找不到 ${instId}，请确认币种名称`, "error");
-      return;
-    }
-
-    setStatus("获取K线...", "loading");
-    const [candles, ind] = await fetchKlines(instId, klineBar, n);
-
-    setStatus("获取持仓量...", "loading");
-    const oiHist = await fetchOiHistory(instId, statPeriod, n);
-
-    setStatus("获取多空比...", "loading");
-    const lsRatio = await fetchLsRatio(symbol, statPeriod, n);
-
-    setStatus("获取资金费率...", "loading");
-    const funding = await fetchFunding(instId);
-    const fundHist = await fetchFundingHist(instId, fundN);
-
-    setStatus("获取Taker数据...", "loading");
-    const taker = await fetchTaker(symbol, statPeriod, n);
-
-    cachedData = formatOutput(symbol, ticker, candles, ind, oiHist, lsRatio, funding, fundHist, taker, n, klineBar, statPeriod);
-    outputEl.textContent = cachedData;
-    outputEl.classList.remove("hidden");
-    actionsEl.classList.remove("hidden");
-    setStatus("✅ 数据就绪", "ok");
-  } catch (e) {
-    setStatus("❌ " + (e.message || "网络错误"), "error");
-  } finally {
-    fetchBtn.disabled = false;
-    fetchBtn.textContent = "获取";
-  }
-}
-
-async function doCopy() {
-  if (!cachedData) return;
-  try {
-    await navigator.clipboard.writeText(cachedData);
-    copyBtn.textContent = "✅ 已复制";
-    setTimeout(() => { copyBtn.textContent = "📋 复制全部"; }, 2000);
-  } catch (e) {
-    // iOS Safari 在非 HTTPS 或非用户手势下可能拒绝；fallback：选中文本让用户长按复制
-    const range = document.createRange();
-    range.selectNode(outputEl);
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-    copyBtn.textContent = "⚠ 长按选中复制";
-    setTimeout(() => { copyBtn.textContent = "📋 复制全部"; }, 3000);
-  }
-}
-
-fetchBtn.addEventListener("click", doFetch);
-copyBtn.addEventListener("click", doCopy);
-symbolEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doFetch(); } });
-</script>
+<script src="snapshot.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
