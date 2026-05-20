@@ -13,10 +13,14 @@
 
 const HTTP_TIMEOUT_MS = 15000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let CORS_PROXY = ""; // 由 buildSnapshot 注入
+let CORS_PROXY = "";   // 由 buildSnapshot 注入
+let PROXY_ALL = false; // 由 buildSnapshot 注入: 全部 OKX/CoinGecko 也走代理 (绕过地区静默限制)
 function viaProxy(url) {
   if (!CORS_PROXY) throw new Error(`需要 CORS 代理才能访问 ${new URL(url).hostname} (留空则跳过)`);
   return CORS_PROXY + encodeURIComponent(url);
+}
+function maybeProxy(url) {
+  return (PROXY_ALL && CORS_PROXY) ? CORS_PROXY + encodeURIComponent(url) : url;
 }
 
 function timeoutFetch(url, opts = {}) {
@@ -86,9 +90,10 @@ let lastOkxError = null;
 async function okxGet(path, params = {}) {
   const url = new URL(OKX + path);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const finalUrl = maybeProxy(url.toString()); // PROXY_ALL=true 时走 CF Worker
   for (let i = 0; i < 3; i++) {
     try {
-      const r = await fetch(url.toString(), { method: "GET" });
+      const r = await fetch(finalUrl, { method: "GET" });
       const j = await r.json();
       if (j.code === "0") { lastOkxError = null; return j.data || []; }
       if ((j.code === "50011" || j.code === "50061") && i < 2) {
@@ -208,7 +213,7 @@ async function fetchRelative(symbol) {
     if (t) out.ratio_vs_btc = { last: t.last, chg_pct: t.chg_pct, high24h: t.high24h, low24h: t.low24h };
   }
   try {
-    const g = await getJson("https://api.coingecko.com/api/v3/global");
+    const g = await getJson(maybeProxy("https://api.coingecko.com/api/v3/global"));
     const mc = g?.data?.market_cap_percentage || {};
     out.btc_dominance_pct = mc.btc ?? null;
     out.eth_dominance_pct = mc.eth ?? null;
@@ -621,7 +626,7 @@ const ETH_PERP_TARGETS = [
 ];
 async function fetchCgDerivatives(symbol) {
   if (symbol !== "ETH") return null; // 仅 ETH 维护映射, 其他币种跳过
-  const rows = await getJson("https://api.coingecko.com/api/v3/derivatives");
+  const rows = await getJson(maybeProxy("https://api.coingecko.com/api/v3/derivatives"));
   const found = [];
   for (const [market, symbols] of ETH_PERP_TARGETS) {
     const m = rows.find((r) => r.market === market && symbols.has(r.symbol) && (r.contract_type === "perpetual" || r.contract_type == null));
@@ -761,7 +766,7 @@ async function fetchMacro() {
  * stETH / ETH 价差 (CoinGecko)
  * =========================================================================== */
 async function fetchStethSpread() {
-  const url = "https://api.coingecko.com/api/v3/simple/price?ids=staked-ether,ethereum&vs_currencies=usd,eth&include_24hr_change=true";
+  const url = maybeProxy("https://api.coingecko.com/api/v3/simple/price?ids=staked-ether,ethereum&vs_currencies=usd,eth&include_24hr_change=true");
   const data = await getJson(url);
   const ethUsd = data.ethereum.usd, stethUsd = data["staked-ether"].usd;
   const stethInEth = data["staked-ether"].eth;
@@ -1034,8 +1039,9 @@ function formatMarkdown(j) {
 /* ===========================================================================
  * 主聚合: 并发拉取 + 计算指标 + 装配 snapshot + 渲染 markdown
  * =========================================================================== */
-async function buildSnapshot(symbol, account, proxy, sendProgress) {
+async function buildSnapshot(symbol, account, proxy, sendProgress, proxyAll = false) {
   CORS_PROXY = (proxy || "").trim();
+  PROXY_ALL = !!proxyAll;
   const errors = {};
   const wrap = async (label, fn) => {
     try { sendProgress?.(label); return await fn(); }

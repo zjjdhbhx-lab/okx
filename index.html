@@ -45,8 +45,13 @@
     <label class="wide">CORS 代理 URL(Yahoo / Farside 需要,留空则两段失败)
       <input id="proxy" type="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="https://your-worker.workers.dev/?url=">
     </label>
+    <label class="wide check">
+      <input id="proxy-all" type="checkbox">
+      <span>全部经代理(OKX/CoinGecko 也走 ↑ 的代理)</span>
+    </label>
     <div class="hint wide">
-      提示:OKX 与 CoinGecko 直连即可;<b>宏观 DXY/NDX/US10Y</b> 与 <b>ETH ETF 流向</b> 必须经代理(浏览器 CORS 限制)。推荐部署自己的 Cloudflare Worker — 见 README。
+      <b>什么时候打开 ↑</b>:你的网络出口被 OKX rubik 统计端点静默限制(返回空数据)时——典型表现为 §6 缺 OI 时序、§7/§8 完全空。CF Worker 边缘 IP 通常可直接拿到完整 rubik 数据。打开后每次抓取慢 5–10 秒(全部走代理),但数据完整。<br>
+      OKX 行情/K线/盘口/clearing 与 CoinGecko 直连一般无障碍;Yahoo(DXY/NDX/US10Y)和 Farside(ETF)<b>始终需要</b>代理。
     </div>
   </div>
 </details>

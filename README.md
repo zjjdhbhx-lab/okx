@@ -26,14 +26,22 @@ eth-snapshot-v2-web/
 
 浏览器跨域有限制,**不同数据源待遇不同**:
 
-| 数据源                                     | 浏览器直连 | 备注                                             |
-| ------------------------------------------ | ---------- | ------------------------------------------------ |
-| OKX (`www.okx.com/api/v5/...`)             | ✅          | 行情/K线/OI/funding/LSR/taker/清算/盘口/合约信息 |
-| CoinGecko (`api.coingecko.com`)            | ✅          | 跨交易所 OI、stETH/ETH、BTC.D/ETH.D              |
-| Yahoo Finance (`query1.finance.yahoo.com`) | ❌          | DXY / NDX / US10Y — **必须经代理**               |
-| Farside (`farside.co.uk`)                  | ❌          | ETH 现货 ETF 流向 — **必须经代理**               |
+| 数据源 | 浏览器直连 | 备注 |
+|---|---|---|
+| OKX (`www.okx.com/api/v5/...`) | ✅ | 行情/K线/OI/funding/LSR/taker/清算/盘口/合约信息 |
+| CoinGecko (`api.coingecko.com`) | ✅ | 跨交易所 OI、stETH/ETH、BTC.D/ETH.D |
+| Yahoo Finance (`query1.finance.yahoo.com`) | ❌ | DXY / NDX / US10Y — **必须经代理** |
+| Farside (`farside.co.uk`) | ❌ | ETH 现货 ETF 流向 — **必须经代理** |
 
 代理为空时,Yahoo + Farside 这两段会失败并出现在底部"部分数据源失败"列表,**其它段不受影响**(占整体数据的 ~85%)。
+
+### ⚠️ OKX rubik 静默限制(部分网络出口会遇到)
+
+OKX 的 `/api/v5/rubik/stat/*`(OI 历史、LSR、CVD taker)会按访问者 IP **静默返回空数据**(`{code:"0", data:[]}`)——不报错,只是没数据。典型表现:§6 缺 OI 时序 / §7 持仓结构空 / §8 CVD 空 / §13 BTC sync 的 OI 显示 `—`。市场/公开端点不受影响。
+
+这是网络问题不是代码问题。**解决:勾选界面里的"全部经代理"**,所有 OKX/CoinGecko 调用也走你的 CF Worker,CF 边缘 IP 通常能拿到完整 rubik 数据。Yahoo/Farside 本来就经代理,不受此开关影响。
+
+代价:抓取时间从 ~3s 涨到 ~10s(16 个请求都串行经一次 CF 边缘)。
 
 ### 方案 A:用公共代理(快但不稳)
 
@@ -103,13 +111,13 @@ export default {
 
 ## 与 Chrome 扩展的差异
 
-|                 | 扩展版                       | 网页版                      |
-| --------------- | ---------------------------- | --------------------------- |
-| Yahoo / Farside | ✅ 扩展 host_permissions 直抓 | ⚠️ 需 CORS 代理              |
-| Coinglass       | ⚙️ 可选(扩展面板填 key)       | ❌ 移除(浏览器侧无 key 管理) |
-| 输出内容        | 完全一致 14 段               | 完全一致 14 段              |
-| 数据复制        | 自动注入 Claude.ai 对话框    | 复制按钮 → 手动粘贴         |
-| iPhone 可用     | ❌ Chrome 扩展 iOS 不支持     | ✅ 任何浏览器                |
+| | 扩展版 | 网页版 |
+|---|---|---|
+| Yahoo / Farside | ✅ 扩展 host_permissions 直抓 | ⚠️ 需 CORS 代理 |
+| Coinglass | ⚙️ 可选(扩展面板填 key)| ❌ 移除(浏览器侧无 key 管理) |
+| 输出内容 | 完全一致 14 段 | 完全一致 14 段 |
+| 数据复制 | 自动注入 Claude.ai 对话框 | 复制按钮 → 手动粘贴 |
+| iPhone 可用 | ❌ Chrome 扩展 iOS 不支持 | ✅ 任何浏览器 |
 
 ## 本地预览(可选)
 
@@ -126,4 +134,3 @@ python -m http.server 8080
 - 国内访问 Cloudflare Workers 走 `*.workers.dev` 域名通常可用,实在被墙可绑自己的域名 + Cloudflare 默认 CDN
 - 公共代理(allorigins / corsproxy)从国内访问稳定性参差,看运气
 - OKX 接口对单 IP 有限流,正常使用(几秒点一次)碰不到上限
-

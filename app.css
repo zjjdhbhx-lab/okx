@@ -125,6 +125,21 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   border-left: 3px solid var(--accent);
 }
 .hint b { color: var(--text); }
+.grid label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 4px 0;
+}
+.grid label.check input {
+  width: 20px; height: 20px;
+  min-height: 20px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
 
 .actions {
   display: flex;

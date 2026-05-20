@@ -4,6 +4,7 @@
  */
 const $ = (id) => document.getElementById(id);
 const KEYS = ["symbol", "equity", "risk", "horizon", "liqtol", "positions", "proxy"];
+const BOOL_KEYS = ["proxy-all"];
 
 let lastResult = null;
 
@@ -33,12 +34,16 @@ function readAccount() {
 
 function saveAll() {
   for (const k of KEYS) localStorage.setItem("eth_snap_" + k, $(k).value);
+  for (const k of BOOL_KEYS) localStorage.setItem("eth_snap_" + k, $(k).checked ? "1" : "");
 }
 
 function loadAll() {
   for (const k of KEYS) {
     const v = localStorage.getItem("eth_snap_" + k);
     if (v != null) $(k).value = v;
+  }
+  for (const k of BOOL_KEYS) {
+    $(k).checked = localStorage.getItem("eth_snap_" + k) === "1";
   }
 }
 
@@ -60,7 +65,8 @@ async function runFetch() {
       symbol,
       readAccount(),
       $("proxy").value.trim(),
-      (text) => setStatus("⏳ " + text)
+      (text) => setStatus("⏳ " + text),
+      $("proxy-all").checked
     );
     lastResult = res;
     $("output").textContent = res.markdown;
@@ -115,11 +121,11 @@ function dlJson() {
 document.addEventListener("DOMContentLoaded", () => {
   loadAll();
   // change-on-change 保存(iOS 上 change 触发时机更稳)
-  for (const k of KEYS) {
+  for (const k of [...KEYS, ...BOOL_KEYS]) {
     const el = $(k);
     if (!el) continue;
     el.addEventListener("change", saveAll);
-    el.addEventListener("input", saveAll);
+    if (el.type !== "checkbox") el.addEventListener("input", saveAll);
   }
   $("btn-fetch").addEventListener("click", runFetch);
   $("btn-copy").addEventListener("click", copyMd);
